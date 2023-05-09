@@ -47,11 +47,11 @@ CREATE TABLE product (
     alert_quantity INT NOT NULL,
     product_type ENUM('simple','composite'),
     product_nature ENUM('good','service'),
-    allow_purchase ENUM(0,1) DEFAULT 1,
-    allow_sale ENUM(0,1) DEFAULT 1, 
+    allow_purchase TINYINT DEFAULT 1,
+    allow_sale TINYINT DEFAULT 1, 
     notes VARCHAR(200),
-    track_inventory ENUM(0,1) DEFAULT 1,
-    earn_commission ENUM(0, 1) DEFAULT 0, 
+    track_inventory TINYINT DEFAULT 1 NOT NULL,
+    earn_commission TINYINT DEFAULT 0 NOT NULL, 
     media_id INT NOT NULL,
     commission_type_id INT NOT NULL,
     vendor_id INT NOT NULL,
@@ -63,13 +63,7 @@ CREATE TABLE product (
 
 );
 
-SELECT count(reference_number) from products
-where business_id = business_id;
 
-reference_number = count+1
-
-SELECT business_id from business
-where business_account = billing_account;
 
 
 
