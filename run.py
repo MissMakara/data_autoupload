@@ -1,12 +1,14 @@
 import logging.handlers
 
-from flask import Flask
+from flask import Flask, request, redirect, url_for
 from flask_restful import Api
 from concurrent_log_handler import ConcurrentRotatingFileHandler
+import os
 
 from views.home import index
 from views.products import Products
 from utils.utilsfile import ConfigsParser as config
+from os.path import join, dirname, realpath
 
 
 configs = config.parse_configs('BASE')
@@ -17,18 +19,15 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 api = Api(app)
+
 
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.INFO)
 
 app.add_url_rule("/", view_func=index)
 api.add_resource(Products, "/products/<string:reqparam>")
-
-
-
-
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
