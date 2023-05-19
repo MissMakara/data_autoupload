@@ -1,5 +1,5 @@
 
-import sqlalchemy import create_engine
+from sqlalchemy import create_engine
 
 from utils.utilsfile import ConfigsParser as parser
 
@@ -18,7 +18,7 @@ class Db():
             engine =create_engine("mysql+pymysql://{username}:{password}@{host}/{database}?charset=utf8&binary_prefix=true".format(
                 username =self.username,
                 password = self.password,
-                host =self.host,
+                host = self.host,
                 database = self.database,
             ))  
 
@@ -28,5 +28,9 @@ class Db():
             print ("Error creating db connection: ", e)
         
         
-        
+    def close(self):
+        try:
+            self.db_engine.dispose()
+        except Exception as e:
+            pass
             

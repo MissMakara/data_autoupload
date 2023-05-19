@@ -11,22 +11,18 @@ from db.connection import Db
 class Products(Resource):
     def __init__(self):
         self.log = current_app.logger
-        self.log.info("Initializing Orders app...")
+        self.log.info("Initializing Products app...")
         self.db = Db()
         self.db_engine = self.db.db_engine
         self.connection = self.db_engine.connect()
+       
 
 
     def __del__(self):
-        self.log.info("Destroying Orders App ...")
-        if self.configs:
-            self.configs = None
-        
+        self.log.info("Destroying Products App ...")
+
         if self.connection:
             self.db.close()
-
-        if self.db_session:
-            self.db_session.remove()
 
         if self.db:
             self.db.close()
@@ -48,7 +44,16 @@ class Products(Resource):
             response = self.add_products(message)
             return response
         
+        if reqparam == "list_products":
+            response = self.list_products()
+            return response
+        
     
+    def add_products(self, message):
+        return ("in add products method")
+
+    def list_products(self):
+        return ("in list products method")
 
 
 

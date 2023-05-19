@@ -24,7 +24,7 @@ app.logger.addHandler(handler)
 app.logger.setLevel(logging.INFO)
 
 app.add_url_rule("/", view_func=index)
-app.add_resource(Products, "/products/<string:reqparam>")
+api.add_resource(Products, "/products/<string:reqparam>")
 
 
 
