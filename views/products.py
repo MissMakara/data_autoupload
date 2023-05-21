@@ -40,7 +40,7 @@ class Products(Resource):
             
         # self.log.info("Received a POST request, with data,{}".format(products_data))
         # response = self.router(reqparam, products_file)
-        # return 
+        return response
 
     def router(self,reqparam):
         if reqparam =="process_file":
@@ -62,26 +62,15 @@ class Products(Resource):
                 response = self.launch_form()
                 return response
             
-            # import pdb
-            # pdb.set_trace()
-
-            # data = pd.read_csv(products_file, encoding='utf-8')
-            # records= data.to_dict('records')
+            data = pd.read_csv(products_file, encoding='latin')
+            records= data.to_dict('records')
             # print(records)
-            
-            for line in products_file:
-                print(line)
-            # with open(products_file, 'r') as file:
-            #     csvreader = csv.reader(file)
-            #     for row in csvreader:
-            #         print(row)
 
-            return "success"
+            return records
         
         except Exception as e:
-            return e
-        
-      
+            self.log.error("Unable to process due to: {}".format(e))
+            return e   
 
     def launch_form(self):   
         headers = {
