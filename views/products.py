@@ -6,6 +6,7 @@ from flask import current_app, make_response, request, render_template, redirect
 from flask_restful import Resource
 from sqlalchemy import select
 from sqlalchemy.sql import text as sql_text
+from sqlalchemy.exc import SQLAlchemyError
 
 from urllib import response
 
@@ -82,7 +83,7 @@ class Products(Resource):
     
     def add_data(self, data):
         self.log.info("in add data method")
-        self.log.info("Received payload: {}".format(data))
+        # self.log.info("Received payload: {}".format(data))
 
         final_list=[]
         try:
@@ -92,28 +93,45 @@ class Products(Resource):
                 business_id_data = {
                     "billing_account": "BA02",
                 }
-
+                self.log.info("Running the business_id query")
                 business_id_query = "SELECT business_id from business where billing_account = :billing_account"
-                bus_id_resp = self.connection.execute(sql_text(business_id_query),business_id_data).fetchone()
-                business_id_dict =dict(bus_id_resp)
+                try:
+                    bus_id_resp = self.connection.execute(sql_text(business_id_query),business_id_data).fetchone()
+                
+                except SQLAlchemyError as error:
+                    self.log.error("SQL ERROR: {}".format(error))
+                    return "Query ERROR"
 
-                print(business_id_dict)
+                if bus_id_resp is None:
+                    self.log.error("Query returned NULL: {}".format(bus_id_resp))
+                    return "Query unsuccessful"
+                business_id_dict =dict(bus_id_resp)
 
                 business_id = business_id_dict["business_id"]
                 self.log.info("Received business_id: {}".format(business_id))
 
-
+                
+                self.log.info("Running the reference id query")
                 refno_query = "SELECT count(reference_number) AS count from product where business_id = :business_id"
-                refno_resp = self.connection.execute(sql_text(refno_query ),business_id_dict).fetchone()
+                try: 
+                    refno_resp = self.connection.execute(sql_text(refno_query ),business_id_dict).fetchone()
+                except SQLAlchemyError as error:
+                    self.log.error("SQL ERROR: {}".format(error))
+                    return "Query ERROR"
+            
+                if refno_resp is None:
+                    self.log.error("Query returned NULL: {}".format(refno_resp))
+                    return "Query unsuccessful"
+                
                 refno_dict =dict(refno_resp)
                 # print(refno_dict)
                 reference_number = refno_dict["count"]+1
                 self.log.info("Received reference_number: {}".format(reference_number))
 
-                vendor_data= {
-                    "vendor_name":item["vendor_name"],
-                    "business_id":business_id,
-                }
+                # vendor_data= {
+                #     "vendor_name":item["vendor_name"],
+                #     "business_id":business_id,
+                # }
 
                 # vendor_id_query = "SELECT vendor_id FROM vendor WHERE vendor_name=:vendor_name and business_id=:business_id"
                 # vendor_resp = self.connection.execute(sql_text(vendor_id_query),vendor_data).fetchone()
@@ -122,33 +140,80 @@ class Products(Resource):
 
                 # self.log.info("Received vendor_id: {}".format(vendor_id))
 
+                self.log.info("Running the uom_id query")
                 uom_data= {
                     "uom_name":item["uom_name"],
                     "business_id":business_id,
                 }
-                
+                print("UOM_name:", uom_data["uom_name"])
+
                 uom_id_query = "SELECT uom_id FROM uom WHERE uom_name =:uom_name and business_id =:business_id"
-                uom_id_resp = self.connection.execute(sql_text(uom_id_query),uom_data).fetchone()
+                try:
+                    uom_id_resp = self.connection.execute(sql_text(uom_id_query),uom_data).fetchone()
+                
+                except SQLAlchemyError as error:
+                    self.log.error("SQL ERROR: {}".format(error))
+                    return "Query ERROR"
+                
+                if uom_id_resp is None:
+                    self.log.error("Query returned NULL: {}".format(uom_id_resp))
+                    return "Query unsuccessful"
+                
                 uom_dict = dict(uom_id_resp)
-                uom_id = uom_dict["uom_dict"]
+                uom_id = uom_dict["uom_id"]
                 
-                # expense_data= {
-                #     "expense_group_name":item["expense_group_name"],
-                #     "business_id":business_id,
-                # }
+                self.log.info("Received uom_id: {}".format(uom_id))
+                
 
-                # expense_group_id_query = "SELECT expense_group_id FROM expense_group WHERE group_name= :expense_group_name and business_id=:business_id"
-                # expense_group_id = self.connection.execute(sql_text(expense_group_id_query),expense_data).fetchone()
 
-                # product_group_data={
-                #     "product_group_name":item["expense_group_name"],
-                #     "business_id":business_id,
-                # }
+                self.log.info("Running the expense_data_id query")
+                expense_data= {
+                    "expense_group_name":item["expense_group_name"],
+                    "business_id":business_id,
+                }
+                print(expense_data['expense_group_name'])
+                
+                expense_group_id_query = "SELECT expense_group_id FROM expense_group WHERE group_name= :expense_group_name and business_id=:business_id"
+                try:
+                    expense_group_id_resp = self.connection.execute(sql_text(expense_group_id_query),expense_data).fetchone()
+                except SQLAlchemyError as error:
+                    self.log.error("SQL ERROR: {}".format(error))
+                    return "Query ERROR"
+                
+                if expense_group_id_resp is None:
+                    self.log.error("Query returned NULL: {}".format(expense_group_id_query))
+                    return "Query unsuccessful"
+                
+                expense_group_dict=dict(expense_group_id_resp)
+                expense_group_id = expense_group_dict["expense_group_id"]
 
-                # product_group_id_query = "SELECT product_group_id FROM product_group WHERE group_name=:product_group_name and business_id=:business_id"
-                # product_group_id = self.connection.execute(sql_text(product_group_id_query),product_group_data).fetchone()
+                self.log.info("Received expense_group_id: {}".format(expense_group_id))
 
                 
+                self.log.info("Running the product_group_id query")
+                product_group_data={
+                    "product_group_name":item["product_group_name"],
+                    "business_id":business_id,
+                }
+                print(product_group_data["product_group_name"])
+
+                product_group_id_query = "SELECT product_group_id FROM product_group WHERE group_name=:product_group_name and business_id=:business_id"
+                try:
+                    product_group_id_resp = self.connection.execute(sql_text(product_group_id_query),product_group_data).fetchone()
+                
+                except SQLAlchemyError as error:
+                    self.log.error("SQL ERROR: {}".format(error))
+                
+                if product_group_id_resp is None:
+                    self.log.error("Product Group Query returned NULL: {}".format(product_group_id_resp))
+                    return "Query unsuccessful"
+                
+                
+                product_group_dict = dict(product_group_id_resp)
+                product_group_id  = product_group_dict["product_group_id"]
+                
+                self.log.info("Received product_group_id: {}".format(product_group_id))
+
                 # final_data={
                 #     "business_id": business_id,
                 #     "product_name": item["product_name"], 
@@ -172,13 +237,21 @@ class Products(Resource):
 
                 # }
 
-                # # final_list.append(final_data)
+                
                 # final_insert ="INSERT INTO product ('reference_number', 'product_name`, `product_code`, `cost`, `price`, `allow_purchase`, `allow_sale`, `notes`, `track_inventory`, `vendor_id`, `uom_id`, `expense_group_id`, `product_group_id`, `business_id`, `item_status_id`)"\
                 # "VALUES (:reference_number,:business_id,:product_name, :product_code, :cost, :price, :allow_purchase, :allow_sale, :notes, :track_inventory, :vendor_id,:uom_id , :expense_group_id, :product_group_id, :item_status_id)"
                 
                 # response = self.connection.execute(sql_text(final_insert),final_data)
+
     
         except Exception as e:
             self.log.error("ERROR: {}".format(e))
-            
-        return uom_id
+            s= "ERROR: {}".format(e)
+            return s
+
+        finally:
+            # Close the database connection
+            if self.connection is not None:
+                self.connection.close()
+
+        return product_group_id
