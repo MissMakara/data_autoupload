@@ -1,8 +1,9 @@
 import json
 import pandas as pd
 import csv
+import magic
 
-from flask import current_app, make_response, request, render_template, redirect, url_for
+from flask import current_app, make_response, request, flash, render_template, redirect, url_for, jsonify
 from flask_restful import Resource
 from sqlalchemy import select
 from sqlalchemy.sql import text as sql_text
@@ -51,18 +52,46 @@ class Products(Resource):
         
         if reqparam == "upload":
             response = self.launch_form()
-            return response       
-    
+            return response     
+
+    #the method to process the uploaded file
     def process_file(self):
+        self.log.info("In process file method")
         #convert the file to consise usable data
         try:
+            self.log.info("checking the received file")
+
+            #receive the file
             products_file = request.files['file']
             if products_file.filename != '':
-                print(products_file)
-            
+                self.log.info("It seems a file has been received..")
+                self.log.info("Checking the content type...")
+
+                # file_type = magic.from_buffer(products_file.stream.read(), mime=True)
+                # if products_file.content_type !='text/csv' or file_type != 'text/csv':
+
+                #check if the file is csv file
+                if products_file.content_type !='text/csv':
+                    self.log.error("Uploaded file is not a csv file")
+
+                    error_message = "Wrong file format. Please upload a csv file"
+                    flash(error_message)
+
+                    # return redirect('/products/upload')
+                    
+                    # response = make_response("File format not in csv format", 400)
+                    #if not launch the upload form
+                    
+                    return self.launch_form()
+
             else:
-                response = self.launch_form()
-                return response
+                #check if file has not been received
+                self.log.error("File not received")
+                flash("No file received, please upload a csv file")
+                self.log.info("Reloading form...")
+                # response = jsonify({'message': 'No file received.Kindly retry the upload process.'}), 400
+                
+                return self.launch_form()
             
             data = pd.read_csv(products_file, encoding='latin')
             records= data.to_dict('records')

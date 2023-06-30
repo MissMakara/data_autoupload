@@ -1,9 +1,17 @@
-notes.txt
-steps.txt
-New_ProductList.csv
+project/notes.txt
+project/steps.txt
+project/New_ProductList.csv
 Upload Products Technical Document.docx
-ProductList.csv
-logs
-configs
+project/ProductList.csv
+project/logs
+project/configs
 autoupload_env
-views/__pycache__
+project/views/__pycache__
+tests/functional/readme.txt
+tests/unit/readme.txt
+.pytest_cache
+tests/config.ini
+tests/.pytest_cache
+project/__pycache__
+project/views/__pycache__
+project/db/__pycache__

@@ -1,6 +1,6 @@
 import logging.handlers
 
-from flask import Flask, request, redirect, url_for
+from flask import Flask, request, redirect, url_for, current_app
 from flask_restful import Api
 from concurrent_log_handler import ConcurrentRotatingFileHandler
 import os
@@ -21,7 +21,8 @@ handler.setFormatter(formatter)
 
 app = Flask(__name__, template_folder="templates")
 api = Api(app)
-
+app.secret_key = configs.get('secret_key')
+app.config['SESSION_TYPE'] = configs.get('session_type')
 
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.INFO)
