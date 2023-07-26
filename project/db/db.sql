@@ -63,6 +63,25 @@ CREATE TABLE product (
 
 );
 
+-- clean table structure
+CREATE TABLE product (
+    product_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    reference_number INT NOT NULL,
+    business_id INT NOT NULL,
+    product_name VARCHAR (100) NOT NULL,
+    product_code VARCHAR(100) NOT NULL,
+    cost INT NOT NULL,
+    price FLOAT NOT NULL, 
+    allow_purchase TINYINT DEFAULT 1,
+    allow_sale TINYINT DEFAULT 1, 
+    track_inventory TINYINT DEFAULT 1 NOT NULL,
+    vendor_id INT NOT NULL,
+    uom_id INT NOT NULL,
+    expense_group_id INT NOT NULL, 
+    product_group_id INT NOT NULL
+
+);
+
 
 
 

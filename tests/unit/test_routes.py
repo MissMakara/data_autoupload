@@ -39,12 +39,13 @@ def test_incorrect_file_format_upload():
 #test for a missing file upload
 def test_missing_file():
     url = UPLOAD_ENDPOINT+'/products/process_file'
-    response = requests.post(url)
+    response = requests.post(url = url, files="")
     upload_error = b'No file received, please upload a csv file'
 
-    # print(response.content)
+    print("response", response)
+    assert response.status_code == 500
     #check if it receives the response error on encountering a missing file
-    assert upload_error in response.content
+    assert upload_error in response
 
 
 

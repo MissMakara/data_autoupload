@@ -9,7 +9,7 @@ from views.home import index
 from views.products import Products
 from utils.utilsfile import ConfigsParser as config
 from os.path import join, dirname, realpath
-
+# from views.products import products_blueprint
 
 configs = config.parse_configs('BASE')
 
@@ -26,6 +26,10 @@ app.config['SESSION_TYPE'] = configs.get('session_type')
 
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.INFO)
+
+# Register the products_blueprint with the app
+# app.register_blueprint(products_blueprint)
+
 
 app.add_url_rule("/", view_func=index)
 api.add_resource(Products, "/products/<string:reqparam>")

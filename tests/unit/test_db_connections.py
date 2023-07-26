@@ -20,7 +20,7 @@ def test_mysql_connection(db_config):
             host=db_config['host'],
             user=db_config['username'],
             password= db_config['password'],
-            database= db_config['database']
+            database= db_config['db_name']
         )
         
         # Check if the connection is successful
@@ -39,7 +39,7 @@ def test_mysql_query_processing(db_config):
             host=db_config['host'],
             user=db_config['username'],
             password= db_config['password'],
-            database= db_config['database']
+            database= db_config['db_name']
         )
         
         # Test the database query processing

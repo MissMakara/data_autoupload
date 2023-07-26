@@ -1,27 +1,40 @@
+#imports
 import json
 import pandas as pd
 import csv
 import magic
 
-from flask import current_app, make_response, request, flash, render_template, redirect, url_for, jsonify
+
+from flask import current_app, make_response, Blueprint,request, flash, render_template, redirect, url_for, jsonify
 from flask_restful import Resource
 from sqlalchemy import select
 from sqlalchemy.sql import text as sql_text
 from sqlalchemy.exc import SQLAlchemyError
-
 from urllib import response
 
+#import the db connection class
 from db.connection import Db
 
+products_blueprint = Blueprint('products', __name__)
+
+
 class Products(Resource):
+    
+    #constructor
     def __init__(self):
+        #initialize logging
         self.log = current_app.logger
         self.log.info("Initializing Products app...")
+        
+        #instantiate the class
         self.db = Db()
+
+        #call the db_engine method to create a connection to the db
         self.db_engine = self.db.db_engine
         self.connection = self.db_engine.connect()
+        
 
-
+    #destructor
     def __del__(self):
         self.log.info("Destroying Products App ...")
 
@@ -30,15 +43,19 @@ class Products(Resource):
 
         if self.db:
             self.db.close()
-
+    
+    #get request handler
     def get(self, reqparam):
         message = request.args.to_dict()
         self.log.info("Received a GET request")
+        #call the router method
         response = self.router(reqparam)
         return response
     
+    #post request handler
     def post(self, reqparam):
         self.log.info("Received a POST request")
+        #call the router method
         response = self.router(reqparam)
             
         # self.log.info("Received a POST request, with data,{}".format(products_data))
@@ -46,23 +63,41 @@ class Products(Resource):
         return response
 
     def router(self,reqparam):
+        #if the request received was to process_file
+        #call the process file method
         if reqparam =="process_file":
             response = self.process_file()
             return response
         
+        #if the request qas to upload
+        #launch the upload form
         if reqparam == "upload":
             response = self.launch_form()
             return response     
 
+    
+    #the method to launch the upload form
+    # @products_blueprint.route('/products/upload', methods=['GET'])
+    def launch_form(self, message=None, category=None):   
+        headers = {
+            'Content-Type': 'text/html'
+        }
+        if message !=None:
+            flash(message, category)
+        
+        return make_response(render_template('upload.html'), 200, headers)
+
+
     #the method to process the uploaded file
     def process_file(self):
         self.log.info("In process file method")
-        #convert the file to consise usable data
+    
         try:
             self.log.info("checking the received file")
 
             #receive the file
             products_file = request.files['file']
+            #check if it is not empty
             if products_file.filename != '':
                 self.log.info("It seems a file has been received..")
                 self.log.info("Checking the content type...")
@@ -87,200 +122,266 @@ class Products(Resource):
             else:
                 #check if file has not been received
                 self.log.error("File not received")
-                flash("No file received, please upload a csv file")
                 self.log.info("Reloading form...")
                 # response = jsonify({'message': 'No file received.Kindly retry the upload process.'}), 400
-                
-                return self.launch_form()
+                message = "No file received, please upload a csv file"
+                category = 'warning'
+
+                return self.launch_form(message, category)
             
             data = pd.read_csv(products_file, encoding='latin')
             records= data.to_dict('records')
-            # print(records)
+          
             response = self.add_data(records)
+
             return response
         
         except Exception as e:
             self.log.error("Unable to process due to: {}".format(e))
             return e   
 
-    def launch_form(self):   
-        headers = {
-            'Content-Type': 'text/html'
-        }
 
-        return make_response(render_template('upload.html'), 200, headers)
+    # #the method to launch the upload form
+    # def launch_form(self, message=None, category=None):  
+    #     self.log.info("In launch form method..") 
+    #     headers = {
+    #         'Content-Type': 'text/html'
+    #     }
+    #     if message != None:
+    #         self.log.info("Flash message received", message)
+          
+    #         #flash(message, category)
+        
+    #     return make_response(render_template('upload.html'), 200, headers)
     
+    #method to add data to the database
     def add_data(self, data):
         self.log.info("in add data method")
         # self.log.info("Received payload: {}".format(data))
 
+        #create a list to hold the final data
         final_list=[]
-        try:
+        
+        #loop through the rows in the uploaded csv file
+        for item in data:
+            print(item)
 
-            for item in data:
-                print(item)
-                business_id_data = {
-                    "billing_account": "BA02",
-                }
-                self.log.info("Running the business_id query")
-                business_id_query = "SELECT business_id from business where billing_account = :billing_account"
-                try:
-                    bus_id_resp = self.connection.execute(sql_text(business_id_query),business_id_data).fetchone()
-                
-                except SQLAlchemyError as error:
-                    self.log.error("SQL ERROR: {}".format(error))
-                    return "Query ERROR"
+        
+            billing_account= item.get('billing_account')
+            #check if the billing account value is available
+            if billing_account is None:
+                return "Billing account not available"
 
-                if bus_id_resp is None:
-                    self.log.error("Query returned NULL: {}".format(bus_id_resp))
-                    return "Query unsuccessful"
-                business_id_dict =dict(bus_id_resp)
-
-                business_id = business_id_dict["business_id"]
-                self.log.info("Received business_id: {}".format(business_id))
-
-                
-                self.log.info("Running the reference id query")
-                refno_query = "SELECT count(reference_number) AS count from product where business_id = :business_id"
-                try: 
-                    refno_resp = self.connection.execute(sql_text(refno_query ),business_id_dict).fetchone()
-                except SQLAlchemyError as error:
-                    self.log.error("SQL ERROR: {}".format(error))
-                    return "Query ERROR"
             
-                if refno_resp is None:
-                    self.log.error("Query returned NULL: {}".format(refno_resp))
-                    return "Query unsuccessful"
-                
-                refno_dict =dict(refno_resp)
-                # print(refno_dict)
-                reference_number = refno_dict["count"]+1
-                self.log.info("Received reference_number: {}".format(reference_number))
+            self.log.info("Running the business_id query")
+            #run the query to get the business_id
+            business_id_query = "SELECT business_id from business where billing_account = :billing_account"
+            try:
+                bus_id_resp = self.connection.execute(sql_text(business_id_query),item).fetchone()
+            
+            #handle any sql error that may occur
+            except Exception as error:
+                self.log.error("SQL ERROR: {}".format(error))
+                return "Query ERROR, Check logs for details"
+ 
+            
+            #handle any error in getting an output from the query
+            if bus_id_resp is None:
+                self.log.error("Query returned NULL: {}".format(bus_id_resp))
+                return "Query unsuccessful"
+            
+            business_id_dict =dict(bus_id_resp)
+            business_id = business_id_dict["business_id"]
+            self.log.info("Received business_id: {}".format(business_id))
 
-                # vendor_data= {
-                #     "vendor_name":item["vendor_name"],
-                #     "business_id":business_id,
-                # }
+            #run the query to get the reference id
+            self.log.info("Running the reference id query")
+            refno_query = "SELECT count(reference_number) AS count from product where business_id = :business_id"
+            try: 
+                refno_resp = self.connection.execute(sql_text(refno_query ),business_id_dict).fetchone()
+            except SQLAlchemyError as error:
+                self.log.error("SQL ERROR: {}".format(error))
+                return "Query ERROR"
+        
+            if refno_resp is None:
+                self.log.error("Query returned NULL: {}".format(refno_resp))
+                return "Query unsuccessful"
+            
+            refno_dict =dict(refno_resp)
+            # print(refno_dict)
+            reference_number = refno_dict["count"]+1
+            self.log.info("Received reference_number: {}".format(reference_number))
 
-                # vendor_id_query = "SELECT vendor_id FROM vendor WHERE vendor_name=:vendor_name and business_id=:business_id"
-                # vendor_resp = self.connection.execute(sql_text(vendor_id_query),vendor_data).fetchone()
-                # vendor_id_dict =dict(vendor_resp)
-                # vendor_id = vendor_id_dict["vendor_id"]
+            #GET THE VENDOR_ID
+            self.log.info("Running the vendor_id query")
+            vendor_name = item.get("vendor_name")
+            #check if the vendor_name is present, if not return an error
+            if vendor_name == None:
+                return "Error: Vendor name not received"
 
-                # self.log.info("Received vendor_id: {}".format(vendor_id))
+            #create a dict to hold the vendor_name and the business_id
+            vendor_data= {
+                "vendor_name":vendor_name,
+                "business_id":business_id,
+            }               
 
-                self.log.info("Running the uom_id query")
-                uom_data= {
-                    "uom_name":item["uom_name"],
-                    "business_id":business_id,
-                }
-                print("UOM_name:", uom_data["uom_name"])
+            self.log.info("Created the vendor dict", vendor_data)
+            #run the query to get the vendor_id
+            vendor_id_query = "SELECT vendor_id FROM vendor WHERE vendor_name=:vendor_name and business_id=:business_id"
+            vendor_resp = self.connection.execute(sql_text(vendor_id_query),vendor_data).fetchone()
+            vendor_id_dict =dict(vendor_resp)
+            vendor_id = vendor_id_dict["vendor_id"]
 
-                uom_id_query = "SELECT uom_id FROM uom WHERE uom_name =:uom_name and business_id =:business_id"
-                try:
-                    uom_id_resp = self.connection.execute(sql_text(uom_id_query),uom_data).fetchone()
-                
-                except SQLAlchemyError as error:
-                    self.log.error("SQL ERROR: {}".format(error))
-                    return "Query ERROR"
-                
-                if uom_id_resp is None:
-                    self.log.error("Query returned NULL: {}".format(uom_id_resp))
-                    return "Query unsuccessful"
-                
-                uom_dict = dict(uom_id_resp)
-                uom_id = uom_dict["uom_id"]
-                
-                self.log.info("Received uom_id: {}".format(uom_id))
-                
+            self.log.info("Received vendor_id: {}".format(vendor_id))
 
 
-                self.log.info("Running the expense_data_id query")
-                expense_data= {
-                    "expense_group_name":item["expense_group_name"],
-                    "business_id":business_id,
-                }
-                print(expense_data['expense_group_name'])
-                
-                expense_group_id_query = "SELECT expense_group_id FROM expense_group WHERE group_name= :expense_group_name and business_id=:business_id"
-                try:
-                    expense_group_id_resp = self.connection.execute(sql_text(expense_group_id_query),expense_data).fetchone()
-                except SQLAlchemyError as error:
-                    self.log.error("SQL ERROR: {}".format(error))
-                    return "Query ERROR"
-                
-                if expense_group_id_resp is None:
-                    self.log.error("Query returned NULL: {}".format(expense_group_id_query))
-                    return "Query unsuccessful"
-                
-                expense_group_dict=dict(expense_group_id_resp)
-                expense_group_id = expense_group_dict["expense_group_id"]
+            #GET THE UOM_ID
+            self.log.info("Running the uom_id query")
+            
+            #check if the uom_name is present, if not return an error
+            uom_name = item.get("uom_name")
+            if uom_name == None:
+                return "Error: uom name not received"
+            
+            #create a dict to hold the data for the query
+            uom_data= {
+                "uom_name":uom_name,
+                "business_id":business_id,
+            }
+            self.log.info("Created the uom info dict", uom_data)
 
-                self.log.info("Received expense_group_id: {}".format(expense_group_id))
+            #run the query to get the uom_id
+            uom_id_query = "SELECT uom_id FROM uom WHERE uom_name =:uom_name and business_id =:business_id"
+            try:
+                uom_id_resp = self.connection.execute(sql_text(uom_id_query),uom_data).fetchone()
+            
+            except SQLAlchemyError as error:
+                self.log.error("SQL ERROR: {}".format(error))
+                return "Query ERROR"
+            
+            if uom_id_resp is None:
+                self.log.error("Query returned NULL: {}".format(uom_id_resp))
+                return "Query unsuccessful"
+            
+            uom_dict = dict(uom_id_resp)
+            uom_id = uom_dict["uom_id"]
+            
+            self.log.info("Received uom_id: {}".format(uom_id))
+            
+        
+            #GET THE EXPENSE_GROUP_ID
+            self.log.info("Running the expense_data_id query")
+            
+            #check if the expense_group_name is present, if not return an error
+            expense_group_name = item.get("expense_group_name")
+            if expense_group_name == None:
+                return "Error: expense group name not received"
 
-                
-                self.log.info("Running the product_group_id query")
-                product_group_data={
-                    "product_group_name":item["product_group_name"],
-                    "business_id":business_id,
-                }
-                print(product_group_data["product_group_name"])
+            #create the expense_group data to b euse in the query
+            expense_data= {
+                "expense_group_name":expense_group_name,
+                "business_id":business_id,
+            }
+            
+            #run the query
+            expense_group_id_query = "SELECT expense_group_id FROM expense_group WHERE group_name= :expense_group_name and business_id=:business_id"
+            try:
+                expense_group_id_resp = self.connection.execute(sql_text(expense_group_id_query),expense_data).fetchone()
+            
+            except SQLAlchemyError as error:
+                self.log.error("SQL ERROR: {}".format(error))
+                return "Query ERROR"
+            
+            if expense_group_id_resp is None:
+                self.log.error("Query returned NULL: {}".format(expense_group_id_query))
+                return "Query unsuccessful"
+        
+            #handle the query output
+            expense_group_dict=dict(expense_group_id_resp)
+            expense_group_id = expense_group_dict["expense_group_id"]
 
-                product_group_id_query = "SELECT product_group_id FROM product_group WHERE group_name=:product_group_name and business_id=:business_id"
-                try:
-                    product_group_id_resp = self.connection.execute(sql_text(product_group_id_query),product_group_data).fetchone()
-                
-                except SQLAlchemyError as error:
-                    self.log.error("SQL ERROR: {}".format(error))
-                
-                if product_group_id_resp is None:
-                    self.log.error("Product Group Query returned NULL: {}".format(product_group_id_resp))
-                    return "Query unsuccessful"
-                
-                
-                product_group_dict = dict(product_group_id_resp)
-                product_group_id  = product_group_dict["product_group_id"]
-                
-                self.log.info("Received product_group_id: {}".format(product_group_id))
+            self.log.info("Received expense_group_id: {}".format(expense_group_id))
 
-                # final_data={
-                #     "business_id": business_id,
-                #     "product_name": item["product_name"], 
-                #     "product_code":item["product_code"],
-                #     "cost":item["cost"],
-                #     "price":item["price"],
-                #     "vendor_id": vendor_id,
-                #     "uom_id": uom_id,
-                #     "expense_group_id": expense_group_id,
-                #     "product_group_id":product_group_data,
-                #     # "alert_quantity:"
-                #     # "product_type",
-                #     # "product_nature", 
-                #     "allow_purchase":item["allow_purchase"], 
-                #     "allow_sale":item["allow_sale"], 
-                #     "notes":item.get["notes"], 
-                #     "track_inventory":item["track_inventory"],
-                #     # "earn_commission":item["earn_commission"] 
-                #     # "media_id", 
-                #     # "commission_type_id"
 
-                # }
+            #GET THE PRODUCT_GROUP_ID
+            self.log.info("Running the product_group_id query")
 
-                
-                # final_insert ="INSERT INTO product ('reference_number', 'product_name`, `product_code`, `cost`, `price`, `allow_purchase`, `allow_sale`, `notes`, `track_inventory`, `vendor_id`, `uom_id`, `expense_group_id`, `product_group_id`, `business_id`, `item_status_id`)"\
-                # "VALUES (:reference_number,:business_id,:product_name, :product_code, :cost, :price, :allow_purchase, :allow_sale, :notes, :track_inventory, :vendor_id,:uom_id , :expense_group_id, :product_group_id, :item_status_id)"
-                
-                # response = self.connection.execute(sql_text(final_insert),final_data)
+            #check if the product_group_name is present, if not return an error
+            product_group_name = item.get("product_group_name")
+            if product_group_name == None:
+                return "Error: product group name not received"
+            
+            #create a dict to hold the query data
+            product_group_data={
+                "product_group_name":item["product_group_name"],
+                "business_id":business_id,
+            }
 
-    
-        except Exception as e:
-            self.log.error("ERROR: {}".format(e))
-            s= "ERROR: {}".format(e)
-            return s
+            #run the query
+            product_group_id_query = "SELECT product_group_id FROM product_group WHERE group_name=:product_group_name and business_id=:business_id"
+            try:
+                product_group_id_resp = self.connection.execute(sql_text(product_group_id_query),product_group_data).fetchone()
+            
+            except SQLAlchemyError as error:
+                self.log.error("SQL ERROR: {}".format(error))
+            
+            if product_group_id_resp is None:
+                self.log.error("Product Group Query returned NULL: {}".format(product_group_id_resp))
+                return "Query unsuccessful"
+            
+            
+            product_group_dict = dict(product_group_id_resp)
+            product_group_id  = product_group_dict["product_group_id"]
+            
+            self.log.info("Received product_group_id: {}".format(product_group_id))
 
-        finally:
-            # Close the database connection
+
+            final_data={
+                "business_id": business_id,
+                "reference_number": reference_number,
+                "product_name": item.get("product_name"), 
+                "product_code":item.get("product_code"),
+                "cost":item.get("cost"),
+                "price":item.get("price"),
+                "allow_purchase":item.get("allow_purchase"),
+                "vendor_id": vendor_id,
+                "uom_id": uom_id,
+                "expense_group_id": expense_group_id,
+                "product_group_id":product_group_id,
+                "allow_sale":item.get("allow_sale"), 
+                "track_inventory":item.get("track_inventory"),
+            
+            }
+
+            self.log.info("Received final data dict: {}".format(final_data))
+
+            final_insert ="INSERT INTO product (reference_number, business_id , product_name, product_code, cost, price, allow_purchase, allow_sale, track_inventory, vendor_id, uom_id, expense_group_id, product_group_id) "\
+            "VALUES (:reference_number,:business_id,:product_name, :product_code, :cost, :price, :allow_purchase, :allow_sale, :track_inventory, :vendor_id,:uom_id , :expense_group_id, :product_group_id)"
+           
+            try:
+                self.log.info("running the insert query...")
+                response = self.connection.execute(sql_text(final_insert),final_data)
+            
+            except Exception as error:
+                self.log.error("SQL ERROR: {}".format(error))
+                message= "Insert unsuccessful. Talk to your administrator"
+                category ='success'
+                return self.launch_form(message, category)
+             
+            #get the id to the last inserted record
+            last_insert_query =self.connection.execute("SELECT LAST_INSERT_ID() as last_inserted_id")
+            last_insert_id = last_insert_query.scalar()
+            self.log.info("Insert successful. Last row_id {}".format(last_insert_id))
+
             if self.connection is not None:
                 self.connection.close()
 
-        return product_group_id
+            message="Success! File data uploaded successfully!"
+            category ='success'
+            return self.launch_form(message, category)
+            
+
+            # Close the database connection
+     
+            
+

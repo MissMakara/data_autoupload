@@ -15,3 +15,4 @@ tests/.pytest_cache
 project/__pycache__
 project/views/__pycache__
 project/db/__pycache__
+
