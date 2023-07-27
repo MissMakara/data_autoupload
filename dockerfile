@@ -7,6 +7,6 @@ ENV TZ=Africa/Nairobi
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 
-RUN pip3 install -r /project/requirements.txt
+RUN pip3 install -r /app/project/requirements.txt
 
 CMD [ "uwsgi", "uwsgi.ini" ]
