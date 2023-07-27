@@ -126,6 +126,7 @@ class Products(Resource):
                 # response = jsonify({'message': 'No file received.Kindly retry the upload process.'}), 400
                 message = "No file received, please upload a csv file"
                 category = 'warning'
+                # flash(message, category)
 
                 return self.launch_form(message, category)
             
@@ -140,19 +141,6 @@ class Products(Resource):
             self.log.error("Unable to process due to: {}".format(e))
             return e   
 
-
-    # #the method to launch the upload form
-    # def launch_form(self, message=None, category=None):  
-    #     self.log.info("In launch form method..") 
-    #     headers = {
-    #         'Content-Type': 'text/html'
-    #     }
-    #     if message != None:
-    #         self.log.info("Flash message received", message)
-          
-    #         #flash(message, category)
-        
-    #     return make_response(render_template('upload.html'), 200, headers)
     
     #method to add data to the database
     def add_data(self, data):
@@ -166,11 +154,15 @@ class Products(Resource):
         for item in data:
             print(item)
 
-        
             billing_account= item.get('billing_account')
             #check if the billing account value is available
             if billing_account is None:
-                return "Billing account not available"
+                message = "UPLOAD ERROR: Billing account column not available."
+                category = 'danger'
+                flash(message, category)
+
+                return self.launch_form()
+                
 
             
             self.log.info("Running the business_id query")
@@ -182,13 +174,21 @@ class Products(Resource):
             #handle any sql error that may occur
             except Exception as error:
                 self.log.error("SQL ERROR: {}".format(error))
-                return "Query ERROR, Check logs for details"
+                message = "QUERY ERROR. Check logs for details or contact your administrator"
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
  
             
             #handle any error in getting an output from the query
             if bus_id_resp is None:
                 self.log.error("Query returned NULL: {}".format(bus_id_resp))
-                return "Query unsuccessful"
+                message = "Query unsuccessful. Contact your administrator."
+                category = 'danger'
+                flash(message, category)
+
+                return self.launch_form()
+             
             
             business_id_dict =dict(bus_id_resp)
             business_id = business_id_dict["business_id"]
@@ -199,16 +199,22 @@ class Products(Resource):
             refno_query = "SELECT count(reference_number) AS count from product where business_id = :business_id"
             try: 
                 refno_resp = self.connection.execute(sql_text(refno_query ),business_id_dict).fetchone()
-            except SQLAlchemyError as error:
-                self.log.error("SQL ERROR: {}".format(error))
-                return "Query ERROR"
+            except Exception as error:
+                self.log.error("SQL ERROR: {}".format(error))   
+                message = "QUERY ERROR. Check logs for details or contact your administrator"
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
+            
         
             if refno_resp is None:
                 self.log.error("Query returned NULL: {}".format(refno_resp))
-                return "Query unsuccessful"
+                message = "Query unsuccessful. Contact your administrator."
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
             
             refno_dict =dict(refno_resp)
-            # print(refno_dict)
             reference_number = refno_dict["count"]+1
             self.log.info("Received reference_number: {}".format(reference_number))
 
@@ -217,7 +223,10 @@ class Products(Resource):
             vendor_name = item.get("vendor_name")
             #check if the vendor_name is present, if not return an error
             if vendor_name == None:
-                return "Error: Vendor name not received"
+                message = "UPLOAD ERROR: Vendor name not received."
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
 
             #create a dict to hold the vendor_name and the business_id
             vendor_data= {
@@ -241,7 +250,12 @@ class Products(Resource):
             #check if the uom_name is present, if not return an error
             uom_name = item.get("uom_name")
             if uom_name == None:
-                return "Error: uom name not received"
+                message = "UPLOAD ERROR: uom name not received."
+                category = 'danger'
+                flash(message, category)
+                
+                return self.launch_form()
+              
             
             #create a dict to hold the data for the query
             uom_data= {
@@ -255,13 +269,19 @@ class Products(Resource):
             try:
                 uom_id_resp = self.connection.execute(sql_text(uom_id_query),uom_data).fetchone()
             
-            except SQLAlchemyError as error:
+            except Exception as error:
                 self.log.error("SQL ERROR: {}".format(error))
-                return "Query ERROR"
+                message = "QUERY ERROR. Check logs for details or contact your administrator"
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
             
             if uom_id_resp is None:
                 self.log.error("Query returned NULL: {}".format(uom_id_resp))
-                return "Query unsuccessful"
+                message = "Query unsuccessful. Contact your administrator."
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
             
             uom_dict = dict(uom_id_resp)
             uom_id = uom_dict["uom_id"]
@@ -275,7 +295,11 @@ class Products(Resource):
             #check if the expense_group_name is present, if not return an error
             expense_group_name = item.get("expense_group_name")
             if expense_group_name == None:
-                return "Error: expense group name not received"
+                message = "UPLOAD ERROR: expense group name not received."
+                category = 'danger'
+                flash(message, category)    
+                return self.launch_form()
+    
 
             #create the expense_group data to b euse in the query
             expense_data= {
@@ -288,13 +312,20 @@ class Products(Resource):
             try:
                 expense_group_id_resp = self.connection.execute(sql_text(expense_group_id_query),expense_data).fetchone()
             
-            except SQLAlchemyError as error:
+            except Exception as error:
                 self.log.error("SQL ERROR: {}".format(error))
-                return "Query ERROR"
+                message = "QUERY ERROR. Check logs for details or contact your administrator"
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
             
             if expense_group_id_resp is None:
                 self.log.error("Query returned NULL: {}".format(expense_group_id_query))
-                return "Query unsuccessful"
+                message = "Query unsuccessful. Contact your administrator."
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
+            
         
             #handle the query output
             expense_group_dict=dict(expense_group_id_resp)
@@ -309,7 +340,11 @@ class Products(Resource):
             #check if the product_group_name is present, if not return an error
             product_group_name = item.get("product_group_name")
             if product_group_name == None:
-                return "Error: product group name not received"
+                message = "UPLOAD ERROR: product group name not received."
+                category = 'danger'
+                flash(message, category)    
+                return self.launch_form()
+
             
             #create a dict to hold the query data
             product_group_data={
@@ -322,12 +357,20 @@ class Products(Resource):
             try:
                 product_group_id_resp = self.connection.execute(sql_text(product_group_id_query),product_group_data).fetchone()
             
-            except SQLAlchemyError as error:
+            except Exception as error:
                 self.log.error("SQL ERROR: {}".format(error))
+                message = "QUERY ERROR. Check logs for details or contact your administrator"
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
+
             
             if product_group_id_resp is None:
                 self.log.error("Product Group Query returned NULL: {}".format(product_group_id_resp))
-                return "Query unsuccessful"
+                message = "Query unsuccessful. Contact your administrator."
+                category = 'danger'
+                flash(message, category)
+                return self.launch_form()
             
             
             product_group_dict = dict(product_group_id_resp)
@@ -366,7 +409,8 @@ class Products(Resource):
                 self.log.error("SQL ERROR: {}".format(error))
                 message= "Insert unsuccessful. Talk to your administrator"
                 category ='success'
-                return self.launch_form(message, category)
+                flash(message, category)
+                return self.launch_form()
              
             #get the id to the last inserted record
             last_insert_query =self.connection.execute("SELECT LAST_INSERT_ID() as last_inserted_id")
@@ -378,7 +422,8 @@ class Products(Resource):
 
             message="Success! File data uploaded successfully!"
             category ='success'
-            return self.launch_form(message, category)
+            flash(message, category)
+            return self.launch_form()
             
 
             # Close the database connection
