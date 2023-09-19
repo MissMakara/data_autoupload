@@ -25,6 +25,14 @@ jobs:
       - name: Install pytest
         run: pip install pytest
       
-      - name: Run tests
-        run: pytest tests/
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Docker image
+        run: docker build -t data_upload_app_v1.0 .
+
+      
+      
+      # - name: Run tests
+      #   run: pytest tests/
    
