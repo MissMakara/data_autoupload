@@ -1,0 +1,42 @@
+Auto entered by the system
+product_id, 
+
+Autocalculated by backend:
+reference_number,
+
+static entries:
+item_status_id
+
+To Expect from user:
+product_name, 
+product_code, 
+cost, 
+price, 
+alert_quantity, 
+product_type,
+
+To expect from the user but not entered into products table:
+
+vendor_name => gets vendor_id
+uom_name => gets uom_id
+expense_group_name => gets expense_group_id
+tax_class_name => gets tax_class_id
+product_group_name => gets product_group_id
+billing_account => gets business_id
+
+
+To be fetched from other tables based on data from the user:
+vendor_id, 
+uom_id, 
+expense_group_id, 
+tax_class_id, 
+product_group_id, 
+business_id
+
+NB:
+uom name and business_id needs to be as in the provided dataset
+
+
+
+
+
