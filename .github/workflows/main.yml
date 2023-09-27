@@ -47,7 +47,7 @@ jobs:
         run: echo ::set-output name=DOCKER_TAG::${{ github.sha }}-latest 
       
       - name: Tag Docker image
-        run: docker tag data_upload eu.gcr.io/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
+        run: docker tag data_upload gcr.io/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
         
 
       
