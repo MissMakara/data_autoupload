@@ -40,11 +40,15 @@ jobs:
         uses: 'google-github-actions/auth@v1'
         with:
           create_credentials_file: 'true'
-          workload_identity_provider: 'https://iam.googleapis.com/projects/163769439750/locations/global/workloadIdentityPools/github-actions/providers/github-actions-workflow-01'
-          service_account: 'artifact-registry-access@psychic-lens-394111.iam.gserviceaccount.com'
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       
       - name: Determine Docker tag
         run: echo ::set-output name=DOCKER_TAG::${{ github.sha }}-latest 
+      
+      - name: Tag Docker image
+        run: docker tag data_upload eu.gcr.io/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
+        
 
       
       # - name: Push Docker image to Google Artifact Registry
