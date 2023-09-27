@@ -43,6 +43,13 @@ jobs:
           workload_identity_provider: 'https://iam.googleapis.com/projects/163769439750/locations/global/workloadIdentityPools/github-actions/providers/github-actions-workflow-01'
           service_account: 'artifact-registry-access@psychic-lens-394111.iam.gserviceaccount.com'
       
+      - name: Determine Docker tag
+        run: echo ::set-output name=DOCKER_TAG::${{ github.sha }}-latest 
+
+      
+      # - name: Push Docker image to Google Artifact Registry
+        # run: docker push gcr.io/your-project-id/your-image-name:${{ github.sha }}
+
       # - name: Run tests
       #   run: pytest tests/
    
