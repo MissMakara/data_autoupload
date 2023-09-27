@@ -44,15 +44,28 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       
       - name: Determine Docker tag
+        id: tag
         run: echo ::set-output name=DOCKER_TAG::${{ github.sha }}-latest 
       
       - name: Tag Docker image
         run: docker tag data_upload gcr.io/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
         
+      - name: Push Docker image to Google Artifact Registry
+        run: docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
+
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REPO_NAME: us-central1/docker-image-repository
+
+
+      
+        # - name: Tag Docker image
+      #   run: docker tag data_upload gcr.io/${{ secrets.PROJECT_ID }}/${{ secrets.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
+        
 
       
       # - name: Push Docker image to Google Artifact Registry
-        # run: docker push gcr.io/your-project-id/your-image-name:${{ github.sha }}
+      #   run: docker push gcr.io/${{ secrets.PROJECT_ID }}/data_upload_app_v1.0:${{ github.sha }}
 
       # - name: Run tests
       #   run: pytest tests/
