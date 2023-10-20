@@ -53,12 +53,12 @@ jobs:
         run: echo ::set-output name=DOCKER_TAG::${{ github.sha }}      
       
 
-      - name: Login to Artifact Registry
-        uses: docker/login-action@v1
-        with:
-          registry: us-central1-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
+      # - name: Login to Artifact Registry
+      #   uses: docker/login-action@v1
+      #   with:
+      #     registry: us-central1-docker.pkg.dev
+      #     username: oauth2accesstoken
+      #     password: ${{ steps.auth.outputs.access_token }}
 
       - id: docker-push-tagged
         name: Tag Docker image and push to Google Artifact Registry
