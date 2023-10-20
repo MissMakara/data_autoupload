@@ -45,17 +45,29 @@ jobs:
       
       - name: Determine Docker tag
         id: tag
-        run: echo ::set-output name=DOCKER_TAG::${{ github.sha }}-latest 
+        run: echo ::set-output name=DOCKER_TAG::${{ github.sha }}      
       
-      - name: Tag Docker image
-        run: docker tag data_upload gcr.io/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
-        
-      - name: Push Docker image to Google Artifact Registry
-        run: docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
-
+      - id: docker-push-tagged
+        name: Tag Docker image and push to Google Artifact Registry
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/docker-image-repository/data_upload_app_v1.0:${{ steps.tag.outputs.DOCKER_TAG }}
+            us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/docker-image-repository/data_upload_app_v1.0:latest
+      
         env:
           PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           REPO_NAME: us-central1/docker-image-repository
+
+     
+     
+     
+      # - name: Tag Docker image
+      #   run: docker tag data_upload gcr.io/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
+        
+      # - name: Push Docker image to Google Artifact Registry
+      #   run: docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.DOCKER_TAG }}
 
 
       
